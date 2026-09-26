@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#bfcdd6">
+  <title>翡冷翠雨夜：失落的十二段手稿</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌧️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;600;700&family=Cormorant+Garamond:ital@1&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar" id="topbar" hidden>
+    <span id="tb-room"></span>
+    <span class="tb-right"><span id="tb-time" aria-label="遊戲時間">00:00</span><span id="tb-score">0 分</span></span>
+    <span class="strip" id="tb-strip" aria-label="手稿拼回進度"></span>
+  </header>
+  <main id="app" aria-live="polite"></main>
+  <footer class="credit">國立花蓮高工　柯貞伊老師設計</footer>
+  <div id="toast" role="status"></div>
+  <button type="button" id="tb-mute" class="mute-fab" aria-pressed="false">雨聲</button>
+
+  <!-- 載入順序：設定 → 題庫 → 圖 → 聲音 → 資料層 → 題型引擎 → 流程 → 教師後台 -->
+  <script src="js/config.js"></script>
+  <script src="js/gameData.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/tasks.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/teacher.js"></script>
+</body>
+</html>

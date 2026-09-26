@@ -1,0 +1,21 @@
+rules_version = '2';
+// 《翡冷翠雨夜》Firestore 規則
+// 學生以匿名登入；已登入者可建立、更新、讀取小隊資料（加入小隊需要用代碼查詢）。
+// 任何人都不能刪除紀錄，避免學生誤刪或惡意刪除。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /teams/{teamId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.data.size() < 60;
+      allow delete: if false;
+
+      match /evals/{evaluatorId} {
+        allow read: if request.auth != null;
+        allow create, update: if request.auth != null
+          && request.resource.data.shares is map;
+        allow delete: if false;
+      }
+    }
+  }
+}
