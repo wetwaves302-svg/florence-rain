@@ -73,6 +73,20 @@ window.Scoring = (function () {
 })();
 
 
+window.APP_VERSION = '2026.09.29-1';
+
+/* 把錯誤直接顯示在畫面下方，方便截圖回報 */
+window.reportError = function (msg) {
+  const box = document.getElementById('errbox');
+  if (!box) return;
+  box.hidden = false;
+  box.innerHTML = '<b>發生錯誤（版本 ' + window.APP_VERSION + '）</b><span></span><button type="button" aria-label="關閉">✕</button>';
+  box.querySelector('span').textContent = String(msg).slice(0, 300);
+  box.querySelector('button').onclick = () => { box.hidden = true; };
+};
+window.addEventListener('error', (e) => window.reportError(e.message + (e.filename ? '（' + e.filename.split('/').pop() + ':' + e.lineno + '）' : '')));
+window.addEventListener('unhandledrejection', (e) => window.reportError((e.reason && e.reason.message) || e.reason));
+
 (function () {
   const D = window.GAME_DATA, CFG = window.APP_CONFIG;
   const esc = Tasks.esc;
@@ -205,9 +219,16 @@ window.Scoring = (function () {
   /* =========================================================
      建立小隊（這台手機就是隊長 m1）
      ========================================================= */
+  /* 班級欄位：config.js 有設定 classes 時用下拉選單，避免學生打錯班級名稱 */
+  const CLASSES = (CFG.classes || []).filter(Boolean);
+  function clsField(m, i) {
+    if (!CLASSES.length) return '<label><span>班級</span><input data-i="' + i + '" data-k="cls" value="' + esc(m.cls) + '" placeholder="電子三乙" autocomplete="off"></label>';
+    return '<label><span>班級</span><select data-i="' + i + '" data-k="cls"><option value="">請選擇</option>' +
+      CLASSES.map((c) => '<option value="' + esc(c) + '"' + (m.cls === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>';
+  }
   function setup() {
     top();
-    const draft = { size: 1, name: D.teamNames[Math.floor(Math.random() * D.teamNames.length)], members: [{ cls: '', seat: '', name: '' }] };
+    const draft = { size: 1, name: D.teamNames[Math.floor(Math.random() * D.teamNames.length)], members: [{ cls: CLASSES.length === 1 ? CLASSES[0] : '', seat: '', name: '' }] };
     function render() {
       while (draft.members.length < draft.size) draft.members.push({ cls: draft.members[0].cls || '', seat: '', name: '' });
       draft.members.length = draft.size;
@@ -219,14 +240,25 @@ window.Scoring = (function () {
           '<button type="button" class="size-btn' + (draft.size === n ? ' on' : '') + '" data-n="' + n + '" aria-pressed="' + (draft.size === n) + '">' + (n === 1 ? '單人' : n + ' 人') + '</button>').join('') + '</div>' +
         '<div class="member-forms">' + draft.members.map((m, i) =>
           '<fieldset class="member-f"><legend>隊員 ' + (i + 1) + (i === 0 ? '（隊長，拿這台手機的人）' : '') + '</legend>' +
-          '<label><span>班級</span><input data-i="' + i + '" data-k="cls" value="' + esc(m.cls) + '" placeholder="電子三甲" autocomplete="off"></label>' +
+          clsField(m, i) +
           '<label class="seat"><span>座號</span><input data-i="' + i + '" data-k="seat" value="' + esc(m.seat) + '" inputmode="numeric" placeholder="05" autocomplete="off"></label>' +
           '<label><span>姓名</span><input data-i="' + i + '" data-k="name" value="' + esc(m.name) + '" placeholder="王小明" autocomplete="off"></label></fieldset>').join('') + '</div>' +
         '<label class="team-name"><span>小隊名稱</span><span class="row"><input id="tname" value="' + esc(draft.name) + '" maxlength="16"><button type="button" class="btn ghost" id="dice">換一個</button></span></label>' +
         '<p class="err" id="err" aria-live="polite"></p>' +
         '<div class="row end"><button type="button" class="btn ghost" id="back">返回</button><button type="button" class="btn primary" id="create">建立小隊</button></div></section>';
       app.querySelectorAll('.size-btn').forEach((b) => b.addEventListener('click', () => { draft.size = +b.dataset.n; render(); }));
-      app.querySelectorAll('.member-f input').forEach((inp) => inp.addEventListener('input', () => { draft.members[+inp.dataset.i][inp.dataset.k] = inp.value.trim(); }));
+      app.querySelectorAll('.member-f input, .member-f select').forEach((inp) => {
+        const set = () => {
+          draft.members[+inp.dataset.i][inp.dataset.k] = inp.value.trim();
+          /* 隊長選了班級，其他還沒選的隊員自動帶入同一班 */
+          if (inp.dataset.k === 'cls' && inp.dataset.i === '0') {
+            draft.members.forEach((m, j) => {
+              if (j > 0 && !m.cls) { m.cls = inp.value; const o = app.querySelector('[data-i="' + j + '"][data-k="cls"]'); if (o) o.value = inp.value; }
+            });
+          }
+        };
+        inp.addEventListener('input', set); inp.addEventListener('change', set);
+      });
       $('#tname').addEventListener('input', (e) => { draft.name = e.target.value.trim(); });
       $('#dice').addEventListener('click', () => { draft.name = D.teamNames[Math.floor(Math.random() * D.teamNames.length)]; $('#tname').value = draft.name; });
       $('#back').addEventListener('click', landing);
@@ -246,7 +278,7 @@ window.Scoring = (function () {
         members: draft.members.map((m, i) => ({ id: 'm' + (i + 1), cls: m.cls, seat: m.seat.padStart(2, '0'), name: m.name })),
         size: draft.members.length, createdAt: now(), startedAt: null, finishedAt: null,
         stage: 'ready', phase: 'intro', roomIdx: 0, taskIdx: 0, roomsDone: [], results: {}, search: {}, roleAcks: {},
-        joined: { m1: now() }, streak: 0, now: null, final: null, takeover: null
+        joined: { m1: now() }, versions: { m1: window.APP_VERSION }, appVersion: window.APP_VERSION, streak: 0, now: null, final: null, takeover: null
       };
       await Store.saveTeam(id, doc);
       dev = { teamId: id, memberId: 'm1' }; saveDev();
@@ -278,7 +310,7 @@ window.Scoring = (function () {
           : '<button type="button" class="btn soft pickme" data-m="' + m.id + '">' + esc(m.seat) + '　' + esc(m.name) + (t.joined && t.joined[m.id] ? '（已加入過，可重新加入）' : '') + '</button>').join('') + '</div>';
       app.querySelectorAll('.pickme').forEach((b) => b.addEventListener('click', async () => {
         dev = { teamId: t.id, memberId: b.dataset.m }; saveDev();
-        await Store.saveTeam(t.id, { joined: { [dev.memberId]: now() } });
+        await Store.saveTeam(t.id, { joined: { [dev.memberId]: now() }, versions: { [dev.memberId]: window.APP_VERSION } });
         attach();
       }));
     });
@@ -290,13 +322,41 @@ window.Scoring = (function () {
   function attach() {
     clearSubs();
     app.innerHTML = '<section class="sheet paper"><p>正在連上小隊……</p></section>';
+    let reported = false;
     unsub.push(Store.subscribeTeam(dev.teamId, (doc) => {
-      if (!doc) return;
+      if (!doc) { window.reportError('讀不到小隊資料，可能是網路中斷，或這個小隊已被刪除。'); return; }
+      if (!reported) { reported = true; T = doc; if (me()) reportVersion(); }
       T = doc;
       if (!me()) { clearDev(); toast('這台手機的身分已不在小隊名單中。'); landing(); return; }
+      versionBanner();
       route();
     }));
     unsub.push(Store.subscribeEvals(dev.teamId, (list) => { evals = list; if (T) route(); }));
+  }
+
+  /* 舊版建立的小隊沒有接力欄位，直接提示重建，避免畫面卡住 */
+  function oldTeam() {
+    topbar(false);
+    app.innerHTML = '<section class="sheet paper"><h2 class="sheet-title">這個小隊是舊版建立的</h2>' +
+      '<p>「' + esc(T.name) + '」是用更新前的網頁建立的，缺少同步作答需要的資料，所以隊員的手機無法跟上題目。</p>' +
+      '<p>請每一台手機都重新整理網頁，確認頁面最下方的版本都是 ' + esc(window.APP_VERSION) + '，再由隊長重新建立一個小隊。</p>' +
+      '<div class="row end"><button type="button" class="btn primary" id="leaveOld">回到首頁</button></div></section>';
+    $('#leaveOld').addEventListener('click', () => { clearDev(); landing(); });
+    lastKey = 'old';
+  }
+  /* 各手機版本不一致時，在畫面上方提醒 */
+  function versionBanner() {
+    let bar = document.getElementById('verbar');
+    const vs = T.versions || {};
+    const other = Object.keys(vs).filter((id) => vs[id] !== window.APP_VERSION).map((id) => (member(id) || {}).name).filter(Boolean);
+    const mismatch = (T.appVersion && T.appVersion !== window.APP_VERSION) || other.length;
+    if (!mismatch) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'verbar'; bar.setAttribute('role', 'alert'); document.body.insertBefore(bar, document.getElementById('app')); }
+    bar.textContent = '版本不一致：這支手機是 ' + window.APP_VERSION + (other.length ? '，' + other.join('、') + ' 的手機是別的版本' : '，小隊是用 ' + T.appVersion + ' 建立的') + '。請每一台手機都重新整理網頁，版本相同才能同步作答。';
+  }
+  /* 每次打開小隊都回報這支手機的版本 */
+  function reportVersion() {
+    if (T && (!T.versions || T.versions[dev.memberId] !== window.APP_VERSION)) write({ versions: { [dev.memberId]: window.APP_VERSION } });
   }
 
   function viewKey() {
@@ -318,6 +378,7 @@ window.Scoring = (function () {
 
   function route() {
     if (location.hash === '#teacher') return;
+    if (T.stage === 'play' && !T.phase) { if (lastKey !== 'old') oldTeam(); return; }
     const key = viewKey();
     if (T.stage !== 'ready') topbar(true);
     if (key === lastKey) return;

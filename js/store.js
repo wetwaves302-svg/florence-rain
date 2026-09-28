@@ -103,7 +103,7 @@ window.Store = (function () {
 
   function subscribeTeam(id, cb) {
     if (mode === 'firebase') {
-      return db.collection('teams').doc(id).onSnapshot((s) => cb(s.exists ? s.data() : null), (e) => console.warn(e));
+      return db.collection('teams').doc(id).onSnapshot((s) => cb(s.exists ? s.data() : null), (e) => { console.warn(e); if (window.reportError) window.reportError('同步小隊資料失敗：' + (e.code || '') + ' ' + (e.message || e)); });
     }
     (listeners.team[id] = listeners.team[id] || []).push(cb);
     cb(readLocal().teams[id] || null);
@@ -135,7 +135,7 @@ window.Store = (function () {
     if (mode === 'firebase') {
       return db.collection('teams').doc(teamId).collection('evals').onSnapshot((qs) => {
         const out = []; qs.forEach((d) => out.push(d.data())); cb(out);
-      }, (e) => console.warn(e));
+      }, (e) => { console.warn(e); if (window.reportError) window.reportError('同步評估資料失敗：' + (e.code || '') + ' ' + (e.message || e)); });
     }
     (listeners.evals[teamId] = listeners.evals[teamId] || []).push(cb);
     cb(Object.values((readLocal().evals || {})[teamId] || {}));
