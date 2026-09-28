@@ -496,3 +496,11 @@ body.on-landing .credit { display: none; }
 .duty.mine { box-shadow: 0 0 0 2px var(--warm); }
 .duty-count { margin: .2rem 0 0; font-size: .82rem; color: var(--brick); }
 .score-line.mine b { color: var(--fog-d); }
+
+/* ---------- 版本與錯誤提示 ---------- */
+.credit .ver { display: block; font-family: var(--sans); font-size: .72rem; letter-spacing: .05em; margin-top: .2rem; opacity: .75; }
+#verbar { position: sticky; top: 0; z-index: 25; background: var(--brick); color: #fbf6ea; padding: .6rem .9rem; font-size: .9rem; line-height: 1.5; }
+#errbox { position: fixed; left: .6rem; right: .6rem; bottom: calc(env(safe-area-inset-bottom, 0px) + 4rem); z-index: 60; background: #fff4ef; color: #7a2f1d;
+  border: 2px solid var(--brick); border-radius: 10px; padding: .6rem 2.4rem .6rem .8rem; font-size: .85rem; line-height: 1.5; box-shadow: var(--shadow); }
+#errbox b { display: block; }
+#errbox button { position: absolute; top: .3rem; right: .3rem; width: 36px; height: 36px; border: 0; background: none; font-size: 1rem; cursor: pointer; color: inherit; }
