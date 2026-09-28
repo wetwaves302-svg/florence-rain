@@ -10,13 +10,13 @@ window.APP_CONFIG = {
     apiKey: 'AIzaSyCAMu9KKFqByq03HLFHu-kRTS6mPOpsMfM',
     authDomain: 'florence-rain-202609.firebaseapp.com',
     projectId: 'florence-rain-202609',
-    storageBucket: 'lorence-rain-202609.firebasestorage.app',
+    storageBucket: 'florence-rain-202609.firebasestorage.app',
     messagingSenderId: '201069470608',
     appId: '1:201069470608:web:78088d9a9f0e6423cb8915'
   },
 
   /* 2. 教師後台密碼（前端簡易門檻，防學生誤入；正式防護請見 README 的 Firestore 規則） */
-  teacherPasscode: 'wetwaves302',
+  teacherPasscode: 'florence2026',
 
   /* 3. 本次課堂場次代碼（可留空）。例如改成 '電子三甲-0930'，教師後台可以用它篩選。 */
   sessionTag: '',
