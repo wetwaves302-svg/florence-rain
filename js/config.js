@@ -16,7 +16,7 @@ window.APP_CONFIG = {
   },
 
   /* 2. 教師後台密碼（前端簡易門檻，防學生誤入；正式防護請見 README 的 Firestore 規則） */
-  teacherPasscode: 'florence2026',
+  teacherPasscode: 'hlisrain2026',
 
   /* 3. 本次課堂場次代碼（可留空）。例如改成 '電子三甲-0930'，教師後台可以用它篩選。 */
   sessionTag: '',
