@@ -464,3 +464,48 @@ body.on-landing .credit { display: none; }
   .drop-in, .restored-paras span, .opt.is-wrong, .chip.was-wrong, .task.oops, .pin.active .slot-in, .burst, .after-card.win .v-main, .qcard .chip, .chip.landed, .streak { animation: none; }
   html { scroll-behavior: auto; }
 }
+
+/* ---------- 教師後台：分頁、進度、成績登記 ---------- */
+.t-tabs { display: flex; gap: .3rem; flex-wrap: wrap; margin: 1rem 0 .8rem; border-bottom: 1.5px solid var(--line); }
+.t-tab { border: 0; background: none; padding: .55rem .9rem; min-height: 44px; cursor: pointer; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -1.5px; }
+.t-tab.on { color: var(--ink); border-bottom-color: var(--brick); }
+.t-table tr.row-warn td { background: color-mix(in srgb, var(--brick) 9%, var(--paper)); }
+.t-table tr.row-now td { background: var(--warm-soft); }
+.team-pick { display: flex; flex-direction: column; max-width: 520px; font-size: .85rem; color: var(--muted); margin-bottom: .6rem; }
+.grade-top { display: grid; gap: 1rem; margin-bottom: .8rem; }
+@media (min-width: 820px) { .grade-top { grid-template-columns: 1.2fr 1fr; align-items: start; } }
+.grade-roster textarea { width: 100%; font: inherit; font-size: .95rem; padding: .5rem .7rem; border: 1.5px solid var(--line); border-radius: 8px; background: var(--paper); resize: vertical; }
+.grade-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-content: flex-start; }
+.grade-actions p { flex-basis: 100%; margin: 0; }
+.grade-t td:nth-child(4) { font-weight: 700; color: var(--brick); text-align: right; }
+
+/* ---------- 接力模式：輪到誰、誰在看 ---------- */
+.your-turn { background: var(--warm-soft); border-radius: 10px; padding: .6rem .8rem; font-weight: 700; font-family: var(--serif); animation: pop .5s ease; }
+.watch-banner { background: var(--fog-d); color: #fbf6ea; border-radius: 10px; padding: .7rem .9rem; margin-bottom: .8rem; }
+.watch-banner p { margin: 0; font-size: .85rem; opacity: .9; }
+.watch-banner .watch-who { font-family: var(--serif); font-size: 1.25rem; opacity: 1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .watch-banner { background: #3d566b; } }
+.watch-note { font-size: .9rem; color: var(--fog-d); border-left: 3px solid var(--fog); padding-left: .6rem; }
+.watch-opts { padding-left: 1.4rem; line-height: 1.7; }
+.watch-opts li { margin-bottom: .3rem; }
+.watching .q { font-size: 1.08rem; }
+.joined-list { list-style: none; padding: 0; margin: .4rem 0 1rem; }
+.joined-list li { display: flex; justify-content: space-between; gap: .5rem; padding: .45rem 0; border-bottom: 1px dashed var(--line); }
+.joined-list li b { font-weight: 600; color: var(--muted); font-size: .9rem; }
+.joined-list li.ok b { color: var(--ok); }
+.duty.mine { box-shadow: 0 0 0 2px var(--warm); }
+.duty-count { margin: .2rem 0 0; font-size: .82rem; color: var(--brick); }
+.score-line.mine b { color: var(--fog-d); }
+
+/* ---------- 版本與錯誤提示 ---------- */
+.credit .ver { display: block; font-family: var(--sans); font-size: .72rem; letter-spacing: .05em; margin-top: .2rem; opacity: .75; }
+#verbar { position: sticky; top: 0; z-index: 25; background: var(--brick); color: #fbf6ea; padding: .6rem .9rem; font-size: .9rem; line-height: 1.5; }
+#errbox { position: fixed; left: .6rem; right: .6rem; bottom: calc(env(safe-area-inset-bottom, 0px) + 4rem); z-index: 60; background: #fff4ef; color: #7a2f1d;
+  border: 2px solid var(--brick); border-radius: 10px; padding: .6rem 2.4rem .6rem .8rem; font-size: .85rem; line-height: 1.5; box-shadow: var(--shadow); }
+#errbox b { display: block; }
+#errbox button { position: absolute; top: .3rem; right: .3rem; width: 36px; height: 36px; border: 0; background: none; font-size: 1rem; cursor: pointer; color: inherit; }
+
+/* ---------- 班級下拉與後台班級按鈕 ---------- */
+.member-f select { width: 100%; min-height: 46px; }
+.cls-quick { display: flex; gap: .4rem; flex-wrap: wrap; flex-basis: 100%; }
+.cls-quick .btn { min-height: 42px; padding: .35rem .9rem; }
