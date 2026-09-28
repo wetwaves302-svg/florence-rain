@@ -73,6 +73,20 @@ window.Scoring = (function () {
 })();
 
 
+window.APP_VERSION = '2026.09.28-3';
+
+/* 把錯誤直接顯示在畫面下方，方便截圖回報 */
+window.reportError = function (msg) {
+  const box = document.getElementById('errbox');
+  if (!box) return;
+  box.hidden = false;
+  box.innerHTML = '<b>發生錯誤（版本 ' + window.APP_VERSION + '）</b><span></span><button type="button" aria-label="關閉">✕</button>';
+  box.querySelector('span').textContent = String(msg).slice(0, 300);
+  box.querySelector('button').onclick = () => { box.hidden = true; };
+};
+window.addEventListener('error', (e) => window.reportError(e.message + (e.filename ? '（' + e.filename.split('/').pop() + ':' + e.lineno + '）' : '')));
+window.addEventListener('unhandledrejection', (e) => window.reportError((e.reason && e.reason.message) || e.reason));
+
 (function () {
   const D = window.GAME_DATA, CFG = window.APP_CONFIG;
   const esc = Tasks.esc;
@@ -246,7 +260,7 @@ window.Scoring = (function () {
         members: draft.members.map((m, i) => ({ id: 'm' + (i + 1), cls: m.cls, seat: m.seat.padStart(2, '0'), name: m.name })),
         size: draft.members.length, createdAt: now(), startedAt: null, finishedAt: null,
         stage: 'ready', phase: 'intro', roomIdx: 0, taskIdx: 0, roomsDone: [], results: {}, search: {}, roleAcks: {},
-        joined: { m1: now() }, streak: 0, now: null, final: null, takeover: null
+        joined: { m1: now() }, versions: { m1: window.APP_VERSION }, appVersion: window.APP_VERSION, streak: 0, now: null, final: null, takeover: null
       };
       await Store.saveTeam(id, doc);
       dev = { teamId: id, memberId: 'm1' }; saveDev();
@@ -278,7 +292,7 @@ window.Scoring = (function () {
           : '<button type="button" class="btn soft pickme" data-m="' + m.id + '">' + esc(m.seat) + '　' + esc(m.name) + (t.joined && t.joined[m.id] ? '（已加入過，可重新加入）' : '') + '</button>').join('') + '</div>';
       app.querySelectorAll('.pickme').forEach((b) => b.addEventListener('click', async () => {
         dev = { teamId: t.id, memberId: b.dataset.m }; saveDev();
-        await Store.saveTeam(t.id, { joined: { [dev.memberId]: now() } });
+        await Store.saveTeam(t.id, { joined: { [dev.memberId]: now() }, versions: { [dev.memberId]: window.APP_VERSION } });
         attach();
       }));
     });
@@ -290,13 +304,41 @@ window.Scoring = (function () {
   function attach() {
     clearSubs();
     app.innerHTML = '<section class="sheet paper"><p>正在連上小隊……</p></section>';
+    let reported = false;
     unsub.push(Store.subscribeTeam(dev.teamId, (doc) => {
-      if (!doc) return;
+      if (!doc) { window.reportError('讀不到小隊資料，可能是網路中斷，或這個小隊已被刪除。'); return; }
+      if (!reported) { reported = true; T = doc; if (me()) reportVersion(); }
       T = doc;
       if (!me()) { clearDev(); toast('這台手機的身分已不在小隊名單中。'); landing(); return; }
+      versionBanner();
       route();
     }));
     unsub.push(Store.subscribeEvals(dev.teamId, (list) => { evals = list; if (T) route(); }));
+  }
+
+  /* 舊版建立的小隊沒有接力欄位，直接提示重建，避免畫面卡住 */
+  function oldTeam() {
+    topbar(false);
+    app.innerHTML = '<section class="sheet paper"><h2 class="sheet-title">這個小隊是舊版建立的</h2>' +
+      '<p>「' + esc(T.name) + '」是用更新前的網頁建立的，缺少同步作答需要的資料，所以隊員的手機無法跟上題目。</p>' +
+      '<p>請每一台手機都重新整理網頁，確認頁面最下方的版本都是 ' + esc(window.APP_VERSION) + '，再由隊長重新建立一個小隊。</p>' +
+      '<div class="row end"><button type="button" class="btn primary" id="leaveOld">回到首頁</button></div></section>';
+    $('#leaveOld').addEventListener('click', () => { clearDev(); landing(); });
+    lastKey = 'old';
+  }
+  /* 各手機版本不一致時，在畫面上方提醒 */
+  function versionBanner() {
+    let bar = document.getElementById('verbar');
+    const vs = T.versions || {};
+    const other = Object.keys(vs).filter((id) => vs[id] !== window.APP_VERSION).map((id) => (member(id) || {}).name).filter(Boolean);
+    const mismatch = (T.appVersion && T.appVersion !== window.APP_VERSION) || other.length;
+    if (!mismatch) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'verbar'; bar.setAttribute('role', 'alert'); document.body.insertBefore(bar, document.getElementById('app')); }
+    bar.textContent = '版本不一致：這支手機是 ' + window.APP_VERSION + (other.length ? '，' + other.join('、') + ' 的手機是別的版本' : '，小隊是用 ' + T.appVersion + ' 建立的') + '。請每一台手機都重新整理網頁，版本相同才能同步作答。';
+  }
+  /* 每次打開小隊都回報這支手機的版本 */
+  function reportVersion() {
+    if (T && (!T.versions || T.versions[dev.memberId] !== window.APP_VERSION)) write({ versions: { [dev.memberId]: window.APP_VERSION } });
   }
 
   function viewKey() {
@@ -318,6 +360,7 @@ window.Scoring = (function () {
 
   function route() {
     if (location.hash === '#teacher') return;
+    if (T.stage === 'play' && !T.phase) { if (lastKey !== 'old') oldTeam(); return; }
     const key = viewKey();
     if (T.stage !== 'ready') topbar(true);
     if (key === lastKey) return;
@@ -431,7 +474,7 @@ window.Scoring = (function () {
     app.innerHTML =
       '<section class="task-screen">' + Art.scene(r.scene, 'mini') +
       '<div class="sheet paper">' +
-      '<p class="your-turn">輪到你了，' + esc(me().name) + '！大家把手機靠過來一起讀題、討論，由你按下答案。</p>' +
+      '<p class="your-turn">輪到你了，' + esc(me().name) + '！大家都能在自己的手機同步讀題、討論，這一題由你操作並送出答案。</p>' +
       '<p class="task-count">' + esc(r.no) + '　' + esc(r.title) + '　任務 ' + (ti + 1) + '／' + r.tasks.length + '</p>' +
       (r.slow ? clocks() : '') + manuscript(r, task, ti === 0) + '<div id="taskMount"></div></div></section>';
     Sound.bellSmall();
@@ -440,6 +483,7 @@ window.Scoring = (function () {
       nextLabel: last ? '完成這一關' : '下一個任務',
       onSearch(entry) { write({ search: { [entry.at + '_' + dev.memberId]: Object.assign({ task: task.id, by: me().name }, entry) } }); },
       onFinish(res) {
+        if (T.roomIdx !== ri || T.taskIdx !== ti || T.phase !== 'task' || activeId() !== dev.memberId) return {};
         const owner = ownerOf(task);
         Object.assign(res, { byId: dev.memberId, by: me().name, ownerId: owner ? owner.id : '', role: task.role });
         const streak = res.wrongs === 0 && !res.revealed ? (T.streak || 0) + 1 : 0;
@@ -450,7 +494,7 @@ window.Scoring = (function () {
       },
       async onNext() {
         await fresh();
-        if (T.roomIdx !== ri || T.taskIdx !== ti || T.phase !== 'task') return;
+        if (T.roomIdx !== ri || T.taskIdx !== ti || T.phase !== 'task' || activeId() !== dev.memberId) return;
         if (last) write({ phase: 'roomDone', roomsDone: (T.roomsDone || []).filter((x) => x !== r.id).concat(r.id), takeover: null });
         else write({ taskIdx: ti + 1, takeover: null });
       }
@@ -475,12 +519,8 @@ window.Scoring = (function () {
         (task.afterNote ? '<div class="name-card"><p class="nc-title">' + esc(task.afterNote.title) + '</p><p>' + esc(task.afterNote.body) + '</p></div>' : '') +
         '<p class="muted small">等 ' + esc(a.name) + ' 按下「' + (T.taskIdx === r.tasks.length - 1 ? '完成這一關' : '下一個任務') + '」。</p>';
     } else {
-      body = '<h2 class="q">' + esc(task.question) + '</h2>' +
-        (task.sourceText && task.sourceText.length > 6 ? '<blockquote class="src">' + esc(task.sourceText) + '</blockquote>' : '') +
-        (task.clues ? '<ul class="clues">' + task.clues.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>' : '') +
-        (task.type === 'mcq' ? '<ol class="watch-opts">' + task.options.map((o) => '<li>' + esc(o.text) + '</li>').join('') + '</ol>' : '') +
-        '<p class="muted small">題目和手稿都在你的手機上，可以一起讀、一起找證據，最後由 ' + esc(a.name) + ' 按下答案。</p>' +
-        '<button type="button" class="btn link" id="takeover">' + esc(a.name) + ' 的手機沒反應？由我接手這一題</button>';
+      body = '<div id="watchTaskMount"></div>' +
+        '<p class="muted small">大家同步閱讀同一題；本題由 ' + esc(a.name) + ' 操作並送出答案。</p>';
     }
     app.innerHTML =
       '<section class="task-screen watching">' + Art.scene(r.scene, 'mini') +
@@ -489,11 +529,12 @@ window.Scoring = (function () {
       '<p class="task-count">' + esc(r.no) + '　' + esc(r.title) + '　任務 ' + (T.taskIdx + 1) + '／' + r.tasks.length + '</p>' +
       '<p class="watch-note">' + esc(note) + '</p>' +
       (r.slow ? clocks() : '') + manuscript(r, task, true) + body + '</div></section>';
-    const tk = $('#takeover');
-    if (tk) tk.addEventListener('click', () => {
-      if (!confirm('由你的手機接手這一題？' + a.name + ' 的畫面會改成觀看。')) return;
-      write({ takeover: { taskId: task.id, memberId: dev.memberId, at: now() } });
-    });
+    if (!res) {
+      Tasks.mount($('#watchTaskMount'), task, {
+        roleLabel: () => leadLabel(task),
+        readOnly: true
+      });
+    }
   }
 
   /* ---------- 過關 ---------- */
