@@ -66,7 +66,7 @@ window.Tasks = (function () {
      共用引擎
      ========================================================= */
   function mount(root, task, hooks) {
-    const st = { submits: 0, wrongs: 0, hints: 0, firstBase: null, firstWrong: [], allWrong: [], revealed: false, done: false };
+    const st = { submits: 0, wrongs: 0, hints: 0, firstBase: null, firstWrong: [], allWrong: [], revealed: false, done: false, startedAt: Date.now(), log: [] };
     const stars = '●●●'.slice(0, task.difficulty || 1) + '○○○'.slice(0, 3 - (task.difficulty || 1));
     root.innerHTML =
       '<article class="task t-' + task.type + '">' +
@@ -96,9 +96,29 @@ window.Tasks = (function () {
     const impl = TYPES[task.type](root.querySelector('.play'), task, ctl);
     if (impl.submitLabel) ctl.setSubmitLabel(impl.submitLabel);
 
+    // 同步閱讀模式：使用完整題型版面，但不註冊送出、提示或計分操作。
+    if (hooks.readOnly) {
+      root.querySelector('.actions').hidden = true;
+      root.querySelectorAll('button, input, select, textarea').forEach((el) => {
+        el.disabled = true;
+      });
+      // 阻止卡片拖曳與自訂點選事件；保留捲動及閱讀。
+      const block = (event) => {
+        if (event.target.closest('a')) return;
+        event.stopImmediatePropagation();
+        if (event.type === 'click' || event.type === 'keydown') event.preventDefault();
+      };
+      ['click', 'pointerdown', 'pointermove', 'pointerup', 'keydown', 'submit', 'change', 'input'].forEach((type) => {
+        root.addEventListener(type, block, true);
+      });
+      return { state: st };
+    }
+
+
     $('.h1').addEventListener('click', () => {
       if (st.done) return;
       if (st.hints < 1) st.hints = 1;
+      st.log.push({ t: Date.now(), e: 'hint1' });
       hintBox.hidden = false;
       hintBox.innerHTML = '<p><b>提示一</b>' + esc(task.hint1) + '</p>';
       $('.h2').disabled = false; $('.h1').disabled = true;
@@ -107,6 +127,7 @@ window.Tasks = (function () {
     $('.h2').addEventListener('click', () => {
       if (st.done) return;
       st.hints = 2;
+      st.log.push({ t: Date.now(), e: 'hint2' });
       hintBox.innerHTML += '<p><b>提示二</b>' + esc(task.hint2) + '</p>';
       $('.h2').disabled = true;
       hooks.onHint && hooks.onHint(2);
@@ -117,6 +138,7 @@ window.Tasks = (function () {
       const r = impl.check();
       if (r.notReady) { ctl.message(esc(r.notReady), 'info'); return; }
       st.submits++;
+      st.log.push({ t: Date.now(), e: r.ok ? 'ok' : 'wrong' });
       if (st.submits === 1) { st.firstBase = r.base; st.firstWrong = (r.wrongKeys || []).slice(); }
       (r.wrongKeys || []).forEach((k) => st.allWrong.push(k));
       if (r.ok) { st.lastOk = true; finish(); return; }
@@ -162,7 +184,8 @@ window.Tasks = (function () {
       const result = {
         id: task.id, room: task.chapter, ability: task.abilityTag, earned, max: task.score,
         wrongs: st.wrongs, hints: st.hints, submits: st.submits, firstBase: st.firstBase == null ? 0 : st.firstBase,
-        firstWrong: st.firstWrong, allWrong: st.allWrong.slice(0, 30), revealed: st.revealed, at: Date.now()
+        firstWrong: st.firstWrong, allWrong: st.allWrong.slice(0, 30), revealed: st.revealed,
+        startedAt: st.startedAt, at: Date.now(), seconds: Math.round((Date.now() - st.startedAt) / 1000), log: st.log.slice(0, 20)
       };
       if (impl.extra) Object.assign(result, impl.extra());
       const info = (hooks.onFinish && hooks.onFinish(result)) || {};
