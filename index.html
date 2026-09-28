@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;600;700&family=Cormorant+Garamond:ital@1&display=swap">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2026.09.28-3">
 </head>
 <body>
   <header class="topbar" id="topbar" hidden>
@@ -18,18 +18,19 @@
     <span class="strip" id="tb-strip" aria-label="手稿拼回進度"></span>
   </header>
   <main id="app" aria-live="polite"></main>
-  <footer class="credit">國立花蓮高工　柯貞伊老師設計</footer>
+  <footer class="credit">國立花蓮高工　柯貞伊老師設計<span class="ver">版本 2026.09.28-3</span></footer>
+  <div id="errbox" role="alert" hidden></div>
   <div id="toast" role="status"></div>
   <button type="button" id="tb-mute" class="mute-fab" aria-pressed="false">雨聲</button>
 
   <!-- 載入順序：設定 → 題庫 → 圖 → 聲音 → 資料層 → 題型引擎 → 流程 → 教師後台 -->
-  <script src="js/config.js"></script>
-  <script src="js/gameData.js"></script>
-  <script src="js/art.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/tasks.js"></script>
-  <script src="js/game.js"></script>
-  <script src="js/teacher.js"></script>
+  <script src="js/config.js?v=2026.09.28-3"></script>
+  <script src="js/gameData.js?v=2026.09.28-3"></script>
+  <script src="js/art.js?v=2026.09.28-3"></script>
+  <script src="js/audio.js?v=2026.09.28-3"></script>
+  <script src="js/store.js?v=2026.09.28-3"></script>
+  <script src="js/tasks.js?v=2026.09.28-3"></script>
+  <script src="js/game.js?v=2026.09.28-3"></script>
+  <script src="js/teacher.js?v=2026.09.28-3"></script>
 </body>
 </html>
